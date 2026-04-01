@@ -11,7 +11,10 @@ function encode(event: SSEEvent): Uint8Array {
 export async function POST(req: NextRequest) {
   const body: CaptionRequest = await req.json()
   const { apiKey, model, instructions, files } = body
-  const clipsDir = process.env.CLIPS_DIR!
+  const clipsDir = process.env.CLIPS_DIR
+  if (!clipsDir) {
+    return new Response('CLIPS_DIR is not set', { status: 500 })
+  }
   const prompt = instructions.trim() || DEFAULT_PROMPT
 
   // Filter out files that already have .txt sidecars (resume support)
