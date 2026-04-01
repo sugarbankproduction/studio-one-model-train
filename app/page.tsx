@@ -20,6 +20,7 @@ export default function Page() {
   const [error, setError] = useState<string | null>(null)
   const [currentFile, setCurrentFile] = useState<string | undefined>()
   const abortRef = useRef<AbortController | null>(null)
+  const timeoutRefs = useRef<ReturnType<typeof setTimeout>[]>([])
 
   // Load clips on mount
   useEffect(() => {
@@ -36,6 +37,10 @@ export default function Page() {
   }, [setClips])
 
   async function handleStart() {
+    // Clear any stale typewriter timeouts from previous run
+    timeoutRefs.current.forEach(clearTimeout)
+    timeoutRefs.current = []
+
     setError(null)
     setIsRunning(true)
 
@@ -61,7 +66,13 @@ export default function Page() {
         signal: abortRef.current.signal,
       })
 
-      const reader = res.body!.getReader()
+      if (!res.body) {
+        setError('No response body from captioning API')
+        setIsRunning(false)
+        return
+      }
+
+      const reader = res.body.getReader()
       const decoder = new TextDecoder()
       let buf = ''
 
@@ -75,15 +86,21 @@ export default function Page() {
 
         for (const line of lines) {
           if (!line.startsWith('data: ')) continue
-          const event: SSEEvent = JSON.parse(line.slice(6))
+          let event: SSEEvent
+          try {
+            event = JSON.parse(line.slice(6))
+          } catch {
+            continue
+          }
 
           if (event.type === 'progress') {
             setCurrentFile(event.file)
             updateClip(event.file, { status: 'captioning', caption: event.caption })
             // Delay so typewriter animation plays, then mark done
-            setTimeout(() => {
+            const tid = setTimeout(() => {
               updateClip(event.file, { status: 'done' })
             }, Math.min(event.caption.length * (1000 / 120) + 500, 5000))
+            timeoutRefs.current.push(tid)
           } else if (event.type === 'error') {
             updateClip(event.file, { status: 'failed' })
           } else if (event.type === 'done') {
@@ -92,6 +109,9 @@ export default function Page() {
           }
         }
       }
+
+      // Stream ended cleanly without a 'done' event (e.g. server crash mid-stream)
+      setIsRunning(false)
     } catch (e: unknown) {
       if ((e as Error).name !== 'AbortError') {
         setError(`Connection lost: ${String(e)}`)
