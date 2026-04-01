@@ -15,11 +15,12 @@ export default function Header({ onStart, disabled }: HeaderProps) {
   useEffect(() => {
     const saved = localStorage.getItem('gemini-api-key')
     if (saved) setApiKey(saved)
-  }, [])
+  }, [setApiKey])
 
   // Persist API key to localStorage on change
   useEffect(() => {
     if (apiKey) localStorage.setItem('gemini-api-key', apiKey)
+    else localStorage.removeItem('gemini-api-key')
   }, [apiKey])
   const canStart = !!apiKey && clips.length > 0 && !isRunning
 
