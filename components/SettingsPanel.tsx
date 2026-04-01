@@ -1,7 +1,7 @@
 // components/SettingsPanel.tsx
 'use client'
 import { useAppStore, GEMINI_MODELS } from '@/lib/store'
-import { DEFAULT_PROMPT } from '@/lib/gemini'
+import { DEFAULT_PROMPT } from '@/lib/prompts'
 
 export default function SettingsPanel() {
   const { model, setModel, instructions, setInstructions } = useAppStore()
