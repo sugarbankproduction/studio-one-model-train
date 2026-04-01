@@ -1,6 +1,7 @@
 // components/Header.tsx
 'use client'
-import { useAppStore, GEMINI_MODELS } from '@/lib/store'
+import { useEffect } from 'react'
+import { useAppStore } from '@/lib/store'
 
 interface HeaderProps {
   onStart: () => void
@@ -9,6 +10,17 @@ interface HeaderProps {
 
 export default function Header({ onStart, disabled }: HeaderProps) {
   const { apiKey, setApiKey, isRunning, clips } = useAppStore()
+
+  // Load API key from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('gemini-api-key')
+    if (saved) setApiKey(saved)
+  }, [])
+
+  // Persist API key to localStorage on change
+  useEffect(() => {
+    if (apiKey) localStorage.setItem('gemini-api-key', apiKey)
+  }, [apiKey])
   const canStart = !!apiKey && clips.length > 0 && !isRunning
 
   return (
