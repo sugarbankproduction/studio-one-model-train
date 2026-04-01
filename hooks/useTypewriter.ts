@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 
 export function useTypewriter(text: string | null, charsPerSec = 120): string {
-  const [displayed, setDisplayed] = useState(text ?? '')
+  const [displayed, setDisplayed] = useState('')
 
   useEffect(() => {
     if (!text) {
