@@ -13,8 +13,8 @@ import type { ClipMeta, SSEEvent } from '@/types'
 
 export default function Page() {
   const {
-    setClips, updateClip, view, isRunning, setIsRunning,
-    apiKey, model, instructions, clips,
+    setClips, setClipsDir, updateClip, view, isRunning, setIsRunning,
+    apiKey, model, instructions, clips, clipsDir,
   } = useAppStore()
 
   const [error, setError] = useState<string | null>(null)
@@ -22,19 +22,28 @@ export default function Page() {
   const abortRef = useRef<AbortController | null>(null)
   const timeoutRefs = useRef<ReturnType<typeof setTimeout>[]>([])
 
-  // Load clips on mount
+  async function loadClips(dir?: string) {
+    setError(null)
+    const url = dir ? `/api/clips?dir=${encodeURIComponent(dir)}` : '/api/clips'
+    try {
+      const r = await fetch(url)
+      const data = await r.json()
+      if ('error' in data) {
+        setError(data.error)
+      } else {
+        setClips(data.clips)
+        setClipsDir(data.dir)
+      }
+    } catch (e) {
+      setError(String(e))
+    }
+  }
+
+  // Load clips on mount (uses CLIPS_DIR from .env.local if set)
   useEffect(() => {
-    fetch('/api/clips')
-      .then((r) => r.json())
-      .then((data: ClipMeta[] | { error: string }) => {
-        if ('error' in data) {
-          setError(data.error)
-        } else {
-          setClips(data)
-        }
-      })
-      .catch((e) => setError(String(e)))
-  }, [setClips])
+    loadClips()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function handleStart() {
     // Clear any stale typewriter timeouts from previous run
@@ -123,7 +132,7 @@ export default function Page() {
   return (
     <>
       <Header onStart={handleStart} disabled={isRunning} />
-      <SettingsPanel />
+      <SettingsPanel onRescan={loadClips} />
       <ProgressBar currentFile={currentFile} />
 
       {error && (
@@ -133,17 +142,26 @@ export default function Page() {
           borderRadius: 8, fontSize: 13, color: 'var(--danger-fg)',
         }}>
           <strong>Error:</strong> {error}
-          {error.includes('CLIPS_DIR') && (
-            <div style={{ marginTop: 6, fontSize: 12, color: 'var(--muted-fg)' }}>
-              Create <code>.env.local</code> in the project root with:{' '}
-              <code>CLIPS_DIR=E:\path\to\your\chunks</code>
-            </div>
-          )}
         </div>
       )}
 
-      <Toolbar />
-      {view === 'grid' ? <ClipGrid /> : <ClipList />}
+      {!clipsDir && !error && (
+        <div style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          padding: '80px 24px', gap: 12, color: 'var(--muted-fg)',
+        }}>
+          <div style={{ fontSize: 48 }}>📁</div>
+          <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--foreground)' }}>No folder selected</div>
+          <div style={{ fontSize: 13 }}>Click <strong>Browse</strong> in the settings panel above to choose your clips folder.</div>
+        </div>
+      )}
+
+      {clipsDir && (
+        <>
+          <Toolbar />
+          {view === 'grid' ? <ClipGrid /> : <ClipList />}
+        </>
+      )}
       <ClipModal />
     </>
   )

@@ -10,6 +10,7 @@ export const GEMINI_MODELS = [
 
 interface AppState {
   clips: ClipMeta[]
+  clipsDir: string
   isRunning: boolean
   view: 'grid' | 'list'
   filter: 'all' | 'done' | 'pending'
@@ -19,6 +20,7 @@ interface AppState {
   modalClip: string | null
   // actions
   setClips: (clips: ClipMeta[]) => void
+  setClipsDir: (dir: string) => void
   updateClip: (file: string, patch: Partial<ClipMeta>) => void
   setIsRunning: (v: boolean) => void
   setView: (v: 'grid' | 'list') => void
@@ -33,6 +35,7 @@ interface AppState {
 
 export const useAppStore = create<AppState>((set, get) => ({
   clips: [],
+  clipsDir: '',
   isRunning: false,
   view: 'grid',
   filter: 'all',
@@ -42,6 +45,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   modalClip: null,
 
   setClips: (clips) => set({ clips }),
+  setClipsDir: (dir) => set({ clipsDir: dir }),
   updateClip: (file, patch) =>
     set((s) => ({
       clips: s.clips.map((c) => (c.file === file ? { ...c, ...patch } : c)),
