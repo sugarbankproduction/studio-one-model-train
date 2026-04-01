@@ -3,68 +3,104 @@
 import { XMLParser } from 'fast-xml-parser'
 import type { ChunkSource } from '@/types'
 
+function toWindowsPath(pathurl: string): string {
+  // Handles file://localhost/E:/... and file:///E:/... → E:\...
+  return decodeURIComponent(
+    pathurl.replace(/^file:\/\/(localhost)?\//, '').replace(/\//g, '\\')
+  )
+}
+
 export function parseFcpXml(xmlContent: string): ChunkSource[] {
-  const parser = new XMLParser({ ignoreAttributes: false, isArray: (name) => name === 'clipitem' || name === 'track' })
+  const parser = new XMLParser({
+    ignoreAttributes: false,
+    attributeNamePrefix: '@_',
+    isArray: (name) => ['clipitem', 'track', 'sequence'].includes(name),
+  })
   const doc = parser.parse(xmlContent)
 
-  // Navigate xmeml > sequence (may be nested inside xmeml or at root)
   const xmeml = doc.xmeml ?? doc
-  const sequence = xmeml.sequence ?? xmeml
 
-  // Timebase: frames per second of the sequence
-  const timebase: number = Number(sequence.timebase ?? 24)
-
-  const sources: ChunkSource[] = []
-
-  // Tracks can be under sequence.media.video.track or sequence.video.track
-  const media = sequence.media ?? sequence
-  const videoSection = media.video ?? media
-  const tracks: unknown[] = Array.isArray(videoSection.track)
-    ? videoSection.track
-    : videoSection.track
-    ? [videoSection.track]
+  // Support both single and multiple sequences
+  const sequences: unknown[] = Array.isArray(xmeml.sequence)
+    ? xmeml.sequence
+    : xmeml.sequence
+    ? [xmeml.sequence]
     : []
 
-  // Collect unique file pathurls seen so we can de-dup file nodes
-  const seenFiles = new Set<string>()
+  // ── Pass 1: build a global file-id → pathurl map ─────────────────────────
+  // Premiere only writes <pathurl> on the first use of a file; subsequent
+  // clipitems reference the same file by id attribute with no pathurl.
+  const fileIdToPath = new Map<string, string>()
 
-  for (const track of tracks) {
-    const clipitems: unknown[] = Array.isArray((track as Record<string,unknown>).clipitem)
-      ? ((track as Record<string,unknown>).clipitem as unknown[])
-      : (track as Record<string,unknown>).clipitem
-      ? [(track as Record<string,unknown>).clipitem]
+  function collectFilePaths(node: unknown) {
+    if (!node || typeof node !== 'object') return
+    const obj = node as Record<string, unknown>
+    if ('pathurl' in obj && typeof obj.pathurl === 'string') {
+      const id = String(obj['@_id'] ?? '')
+      if (id) fileIdToPath.set(id, obj.pathurl as string)
+    }
+    for (const val of Object.values(obj)) {
+      if (Array.isArray(val)) val.forEach(collectFilePaths)
+      else if (typeof val === 'object') collectFilePaths(val)
+    }
+  }
+  collectFilePaths(xmeml)
+
+  // ── Pass 2: extract clip in/out from every clipitem ───────────────────────
+  const sources: ChunkSource[] = []
+  const seen = new Set<string>()
+
+  for (const sequence of sequences) {
+    const seq = sequence as Record<string, unknown>
+    const timebase: number = Number(seq.timebase ?? 24)
+
+    const media = (seq.media ?? seq) as Record<string, unknown>
+    const videoSection = (media.video ?? media) as Record<string, unknown>
+    const tracks: unknown[] = Array.isArray(videoSection.track)
+      ? videoSection.track
+      : videoSection.track
+      ? [videoSection.track]
       : []
 
-    for (const item of clipitems) {
-      const ci = item as Record<string, unknown>
+    for (const track of tracks) {
+      const t = track as Record<string, unknown>
+      const clipitems: unknown[] = Array.isArray(t.clipitem)
+        ? t.clipitem
+        : t.clipitem
+        ? [t.clipitem]
+        : []
 
-      // Skip empty/transition clips (no file)
-      const fileNode = ci.file as Record<string, unknown> | undefined
-      if (!fileNode) continue
+      for (const item of clipitems) {
+        const ci = item as Record<string, unknown>
+        const fileNode = ci.file as Record<string, unknown> | undefined
+        if (!fileNode) continue
 
-      const pathurl = String(fileNode.pathurl ?? '')
-      if (!pathurl) continue
+        // Resolve pathurl — either inline or via the id→path map
+        let pathurl = String(fileNode.pathurl ?? '')
+        if (!pathurl) {
+          const fileId = String(fileNode['@_id'] ?? fileNode['@_idref'] ?? fileNode.id ?? '')
+          pathurl = fileIdToPath.get(fileId) ?? ''
+        }
+        if (!pathurl) continue
 
-      // Convert file:///E:/... → E:\...
-      const sourceFile = decodeURIComponent(pathurl.replace(/^file:\/\/\//, '').replace(/\//g, '\\'))
+        const sourceFile = toWindowsPath(pathurl)
 
-      // in/out are frame numbers in the SOURCE clip
-      const inFrame = Number(ci.in ?? 0)
-      const outFrame = Number(ci.out ?? 0)
+        const inFrame  = Number(ci.in  ?? 0)
+        const outFrame = Number(ci.out ?? 0)
+        if (outFrame <= inFrame) continue
 
-      if (outFrame <= inFrame) continue
+        const inSec  = inFrame  / timebase
+        const outSec = outFrame / timebase
 
-      const inSec = inFrame / timebase
-      const outSec = outFrame / timebase
+        const label = String(ci.name ?? fileNode.name ?? sourceFile.split('\\').pop() ?? sourceFile)
 
-      const label = String(ci.name ?? fileNode.name ?? sourceFile.split('\\').pop() ?? sourceFile)
+        // De-duplicate identical source segments
+        const key = `${sourceFile}|${inFrame}|${outFrame}`
+        if (seen.has(key)) continue
+        seen.add(key)
 
-      // De-duplicate: same source + same in/out = same clip
-      const key = `${sourceFile}|${inSec}|${outSec}`
-      if (seenFiles.has(key)) continue
-      seenFiles.add(key)
-
-      sources.push({ sourceFile, inSec, outSec, label })
+        sources.push({ sourceFile, inSec, outSec, label })
+      }
     }
   }
 
