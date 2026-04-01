@@ -1,26 +1,66 @@
+/* app/globals.css */
 @import "tailwindcss";
 
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'Geist Mono', 'Fira Code', monospace;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: oklch(0.12 0 0);
+  --foreground: oklch(0.94 0 0);
+  --card: oklch(0.17 0 0);
+  --card-border: oklch(0.26 0 0);
+  --header: oklch(0.10 0 0);
+  --muted: oklch(0.22 0 0);
+  --muted-fg: oklch(0.55 0 0);
+  --accent: #6366f1;
+  --accent-fg: #ffffff;
+  --accent-subtle: #6366f133;
+  --accent-border: #6366f155;
+  --accent-light: #a5b4fc;
+  --success: #22c55e;
+  --success-subtle: #22c55e33;
+  --success-border: #22c55e55;
+  --success-fg: #86efac;
+  --warning: #f59e0b;
+  --warning-subtle: #f59e0b33;
+  --warning-border: #f59e0b55;
+  --warning-fg: #fcd34d;
+  --danger: #ef4444;
+  --danger-subtle: #ef444433;
+  --danger-fg: #fca5a5;
+  --radius: 0.625rem;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 3px; }
+
+@keyframes shimmer {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(200%); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
 }
