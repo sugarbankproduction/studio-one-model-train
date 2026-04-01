@@ -12,7 +12,7 @@ function ffmpegChunk(
   settings: ChunkSettings,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
-    const { width, height, framesPerChunk, fps } = settings
+    const { width, height, framesPerChunk, fps, includeAudio } = settings
     const vf = `scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height}`
     const args = [
       '-y',
@@ -24,7 +24,7 @@ function ffmpegChunk(
       '-c:v', 'libx264',
       '-preset', 'fast',
       '-crf', '18',
-      '-an',
+      ...(includeAudio ? ['-c:a', 'aac', '-b:a', '128k'] : ['-an']),
       outputPath,
     ]
 

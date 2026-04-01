@@ -268,6 +268,23 @@ export default function ChunkerView() {
             style={{ ...numInputStyle, width: 64 }}
           />
         </label>
+        {/* Audio toggle */}
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <span style={{ fontSize: 11, color: 'var(--muted-fg)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Audio</span>
+          <button
+            onClick={() => setChunkSettings({ includeAudio: !chunkSettings.includeAudio })}
+            style={{
+              padding: '6px 14px', borderRadius: 6, fontSize: 12, cursor: 'pointer',
+              background: chunkSettings.includeAudio ? 'var(--success-subtle)' : 'var(--card)',
+              border: `1px solid ${chunkSettings.includeAudio ? 'var(--success-border)' : 'var(--card-border)'}`,
+              color: chunkSettings.includeAudio ? 'var(--success-fg)' : 'var(--muted-fg)',
+              transition: 'all 0.15s', whiteSpace: 'nowrap',
+            }}
+          >
+            {chunkSettings.includeAudio ? '🔊 Include' : '🔇 Muted'}
+          </button>
+        </label>
+
         {/* Output dir */}
         <label style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, minWidth: 200 }}>
           <span style={{ fontSize: 11, color: 'var(--muted-fg)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Output Folder</span>

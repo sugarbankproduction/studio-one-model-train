@@ -52,6 +52,7 @@ export interface ChunkSettings {
   height: number         // default 576
   framesPerChunk: number // default 121
   fps: number            // default 24
+  includeAudio: boolean  // default true
   outputDir: string
 }
 

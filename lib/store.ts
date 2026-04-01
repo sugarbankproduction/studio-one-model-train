@@ -57,7 +57,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   activeTab: 'caption',
   // ── Chunker ──
   chunkSources: [],
-  chunkSettings: { width: 960, height: 576, framesPerChunk: 121, fps: 24, outputDir: '' },
+  chunkSettings: { width: 960, height: 576, framesPerChunk: 121, fps: 24, includeAudio: true, outputDir: '' },
 
   setClips: (clips) => set({ clips }),
   setClipsDir: (dir) => set({ clipsDir: dir }),
