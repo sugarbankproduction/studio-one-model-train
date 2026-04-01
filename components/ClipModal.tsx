@@ -5,7 +5,7 @@ import { useAppStore } from '@/lib/store'
 import StatusBadge from './StatusBadge'
 
 export default function ClipModal() {
-  const { modalClip, setModalClip, clips } = useAppStore()
+  const { modalClip, setModalClip, clips, clipsDir } = useAppStore()
   const videoRef = useRef<HTMLVideoElement>(null)
 
   const clip = clips.find((c) => c.file === modalClip)
@@ -43,7 +43,7 @@ export default function ClipModal() {
         <div style={{ aspectRatio: '16/9', background: '#000', position: 'relative' }}>
           <video
             ref={videoRef}
-            src={`/api/video/${encodeURIComponent(clip.file)}`}
+            src={`/api/video/${encodeURIComponent(clip.file)}?dir=${encodeURIComponent(clipsDir)}`}
             controls
             autoPlay
             style={{ width: '100%', height: '100%', display: 'block' }}

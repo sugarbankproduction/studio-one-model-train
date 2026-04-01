@@ -7,10 +7,10 @@ export async function GET(
   { params }: { params: Promise<{ filename: string }> }
 ) {
   const { filename } = await params
-  const clipsDir = process.env.CLIPS_DIR
+  const clipsDir = req.nextUrl.searchParams.get('dir') || process.env.CLIPS_DIR
 
   if (!clipsDir) {
-    return new NextResponse('CLIPS_DIR not set', { status: 500 })
+    return new NextResponse('No clips directory specified', { status: 500 })
   }
 
   // Prevent path traversal

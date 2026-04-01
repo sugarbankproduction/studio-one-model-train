@@ -7,6 +7,7 @@ import type { ClipMeta } from '@/types'
 
 export default function ClipListItem({ clip }: { clip: ClipMeta }) {
   const setModalClip = useAppStore((s) => s.setModalClip)
+  const clipsDir = useAppStore((s) => s.clipsDir)
   const isTyping = clip.status === 'captioning'
   const typed = useTypewriter(isTyping ? clip.caption : null)
   const displayCaption = clip.status === 'done' ? clip.caption : typed
@@ -33,7 +34,7 @@ export default function ClipListItem({ clip }: { clip: ClipMeta }) {
         onClick={() => setModalClip(clip.file)}
       >
         <video
-          src={`/api/video/${encodeURIComponent(clip.file)}`}
+          src={`/api/video/${encodeURIComponent(clip.file)}?dir=${encodeURIComponent(clipsDir)}`}
           style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
           preload="metadata"
           muted

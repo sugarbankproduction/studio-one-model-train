@@ -35,4 +35,5 @@ export interface CaptionRequest {
   model: string
   instructions: string
   files: string[]   // filenames to caption (server skips already-done ones)
+  clipsDir: string
 }

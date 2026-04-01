@@ -71,7 +71,7 @@ export default function Page() {
       const res = await fetch('/api/caption', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apiKey, model, instructions, files: pendingFiles }),
+        body: JSON.stringify({ apiKey, model, instructions, files: pendingFiles, clipsDir }),
         signal: abortRef.current.signal,
       })
 

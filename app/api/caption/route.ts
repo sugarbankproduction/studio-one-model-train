@@ -10,10 +10,10 @@ function encode(event: SSEEvent): Uint8Array {
 
 export async function POST(req: NextRequest) {
   const body: CaptionRequest = await req.json()
-  const { apiKey, model, instructions, files } = body
-  const clipsDir = process.env.CLIPS_DIR
+  const { apiKey, model, instructions, files, clipsDir: bodyDir } = body
+  const clipsDir = bodyDir || process.env.CLIPS_DIR
   if (!clipsDir) {
-    return new Response('CLIPS_DIR is not set', { status: 500 })
+    return new Response('No clips directory specified', { status: 500 })
   }
   const prompt = instructions.trim() || DEFAULT_PROMPT
 
