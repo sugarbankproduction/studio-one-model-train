@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { ClipMeta, ClipStatus } from '@/types'
+import type { ClipMeta, ClipStatus, ChunkSource, ChunkSettings } from '@/types'
 
 export const GEMINI_MODELS = [
   'gemini-3-flash-preview',
@@ -9,6 +9,7 @@ export const GEMINI_MODELS = [
 ] as const
 
 interface AppState {
+  // ── Captioner ──
   clips: ClipMeta[]
   clipsDir: string
   isRunning: boolean
@@ -18,6 +19,11 @@ interface AppState {
   model: string
   instructions: string
   modalClip: string | null
+  // ── Tab ──
+  activeTab: 'caption' | 'chunker'
+  // ── Chunker ──
+  chunkSources: ChunkSource[]
+  chunkSettings: ChunkSettings
   // actions
   setClips: (clips: ClipMeta[]) => void
   setClipsDir: (dir: string) => void
@@ -31,9 +37,13 @@ interface AppState {
   setModalClip: (file: string | null) => void
   filteredClips: () => ClipMeta[]
   doneCounts: () => { done: number; pending: number; total: number }
+  setActiveTab: (tab: 'caption' | 'chunker') => void
+  setChunkSources: (sources: ChunkSource[]) => void
+  setChunkSettings: (patch: Partial<ChunkSettings>) => void
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
+  // ── Captioner ──
   clips: [],
   clipsDir: '',
   isRunning: false,
@@ -43,6 +53,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   model: 'gemini-3-flash-preview',
   instructions: '',
   modalClip: null,
+  // ── Tab ──
+  activeTab: 'caption',
+  // ── Chunker ──
+  chunkSources: [],
+  chunkSettings: { width: 960, height: 576, framesPerChunk: 121, fps: 24, outputDir: '' },
 
   setClips: (clips) => set({ clips }),
   setClipsDir: (dir) => set({ clipsDir: dir }),
@@ -57,6 +72,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   setModel: (v) => set({ model: v }),
   setInstructions: (v) => set({ instructions: v }),
   setModalClip: (file) => set({ modalClip: file }),
+  setActiveTab: (tab) => set({ activeTab: tab }),
+  setChunkSources: (sources) => set({ chunkSources: sources }),
+  setChunkSettings: (patch) =>
+    set((s) => ({ chunkSettings: { ...s.chunkSettings, ...patch } })),
 
   filteredClips: () => {
     const { clips, filter } = get()

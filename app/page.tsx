@@ -9,12 +9,14 @@ import Toolbar from '@/components/Toolbar'
 import ClipGrid from '@/components/ClipGrid'
 import ClipList from '@/components/ClipList'
 import ClipModal from '@/components/ClipModal'
+import TabBar from '@/components/TabBar'
+import ChunkerView from '@/components/ChunkerView'
 import type { ClipMeta, SSEEvent } from '@/types'
 
 export default function Page() {
   const {
     setClips, setClipsDir, updateClip, view, isRunning, setIsRunning,
-    apiKey, model, instructions, clips, clipsDir,
+    apiKey, model, instructions, clips, clipsDir, activeTab,
   } = useAppStore()
 
   const [error, setError] = useState<string | null>(null)
@@ -132,6 +134,9 @@ export default function Page() {
   return (
     <>
       <Header onStart={handleStart} disabled={isRunning} />
+      <TabBar />
+      {activeTab === 'chunker' && <ChunkerView />}
+      {activeTab === 'caption' && <>
       <SettingsPanel onRescan={loadClips} />
       <ProgressBar currentFile={currentFile} />
 
@@ -163,6 +168,7 @@ export default function Page() {
         </>
       )}
       <ClipModal />
+      </>}
     </>
   )
 }

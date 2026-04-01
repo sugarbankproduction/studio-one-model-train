@@ -37,3 +37,30 @@ export interface CaptionRequest {
   files: string[]   // filenames to caption (server skips already-done ones)
   clipsDir: string
 }
+
+// ── Chunker ──────────────────────────────────────────────────────────────────
+
+export interface ChunkSource {
+  sourceFile: string  // absolute path to source video
+  inSec: number       // start time in seconds
+  outSec: number      // end time in seconds
+  label: string       // display name (clip name from XML or filename)
+}
+
+export interface ChunkSettings {
+  width: number          // default 960
+  height: number         // default 576
+  framesPerChunk: number // default 121
+  fps: number            // default 24
+  outputDir: string
+}
+
+export interface ChunkRequest {
+  sources: ChunkSource[]
+  settings: ChunkSettings
+}
+
+export type ChunkSSEEvent =
+  | { type: 'chunk-progress'; file: string; index: number; total: number }
+  | { type: 'chunk-error'; file: string; message: string }
+  | { type: 'chunk-done'; total: number }
